@@ -9,12 +9,12 @@ dentro del zip debe llamarse "mod", no "local_mod". Por eso este script
 renombra la carpeta al comprimir en vez de zipear local_mod/ tal cual.
 
 El nombre del .zip incluye la version de version.php (ej: local_mod-1.1.0.zip)
-para no confundir builds de distintas versiones; usa --output para fijar un
+para no confundir dists de distintas versiones; usa --output para fijar un
 nombre propio.
 
 Uso:
     python build_plugin_zip.py
-    python build_plugin_zip.py --source local_mod --output build/local_mod.zip
+    python build_plugin_zip.py --source local_mod --output dist/local_mod.zip
 """
 
 import argparse
@@ -83,7 +83,7 @@ def main() -> None:
     parser.add_argument("--source", default="local_mod",
                         help="Carpeta del plugin en el repo (default: local_mod)")
     parser.add_argument("--output", default=None,
-                        help="Ruta del .zip a generar (default: build/local_mod-<version>.zip, "
+                        help="Ruta del .zip a generar (default: dist/local_mod-<version>.zip, "
                              "leyendo la version de version.php)")
     parser.add_argument("--carpeta-zip", default="mod",
                         help="Nombre de carpeta raiz dentro del zip (default: mod, "
@@ -92,7 +92,7 @@ def main() -> None:
 
     source = (ROOT / args.source).resolve()
     version = leer_version(source)
-    output = (ROOT / args.output).resolve() if args.output else (ROOT / "build" / f"local_mod-{version}.zip")
+    output = (ROOT / args.output).resolve() if args.output else (ROOT / "dist" / f"local_mod-{version}.zip")
 
     total = empaquetar(source, output, args.carpeta_zip)
     verificar(output, args.carpeta_zip)
