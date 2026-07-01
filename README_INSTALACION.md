@@ -29,23 +29,19 @@ zip trae la carpeta como `local_mod/`, el instalador de plugins la rechaza o
 la instala con el nombre equivocado.
 
 Usa `build_plugin_zip.py` (raíz del repo) para generarlo: empaqueta
-`local_mod/` renombrando la carpeta a `mod` dentro del zip y verifica el
-resultado automáticamente.
+`local_mod/` renombrando la carpeta a `mod` dentro del zip, versiona el
+nombre del archivo y verifica el resultado automáticamente. Ver
+[README_BUILD.md](README_BUILD.md) para el detalle completo (cuándo
+ejecutarlo y dónde queda el resultado).
 
 ```bash
 python build_plugin_zip.py
 ```
 
-Genera `build/local_mod.zip` (carpeta ignorada por git, se regenera cuando
-quieras). Parámetros opcionales:
-
-```bash
-python build_plugin_zip.py --source local_mod --output build/local_mod.zip --carpeta-zip mod
-```
-
-Ese es el archivo que subes en *Administración del sitio → Plugins →
-Instalar plugins* (Opción A). Para la Opción B (copiar archivos a mano) no
-aplica, porque ahí el nombre de carpeta se controla al copiar.
+Ese `.zip` generado en `dist/` es el archivo que subes en *Administración
+del sitio → Plugins → Instalar plugins* (Opción A). Para la Opción B (copiar
+archivos a mano) no aplica, porque ahí el nombre de carpeta se controla al
+copiar.
 
 ## 2. Habilitar Web Services
 

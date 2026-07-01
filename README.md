@@ -41,3 +41,5 @@ recurso* en la interfaz de Moodle, pero vía Web Service:
   Services, generar el token y asignar permisos.
 - **[API.md](README_GENERACION_API.md)** — funciones expuestas, formatos de datos, versión del
   plugin y uso del cliente Python.
+- **[BUILD.md](README_BUILD.md)** — cómo y cuándo empaquetar el plugin
+  (`build_plugin_zip.py`) y dónde queda el `.zip` resultante (`dist/`).
