@@ -8,7 +8,7 @@ local_mod_update_section / local_mod_delete_section.
 
 from typing import Any, Optional
 
-from ..moodle_webservice import MoodleWebService  # ajusta a tu proyecto
+from moodle_webservice import MoodleWebService  # ajusta a tu proyecto
 
 
 class MoodleSeccionWS(MoodleWebService):

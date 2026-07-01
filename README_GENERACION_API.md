@@ -101,7 +101,10 @@ y en `MoodleSeccionWS`) lo detecta.
 
 Paquete `moodle_recursos/`: un cliente simple por tipo de recurso, cada uno
 con solo `crear()` / `actualizar()` / `eliminar()`. Todos extienden
-`MoodleWebService` (ajusta el import a tu proyecto) salvo donde se indica.
+`MoodleWebService` (`moodle_webservice.py`, raíz del repo — un cliente REST
+mínimo; si tu proyecto ya tiene el suyo, bórralo y ajusta el import en
+`moodle_recursos/base.py` y `moodle_recursos/seccion.py`) salvo donde se
+indica.
 
 | Clase | Archivo | Tipo Moodle | Funciones |
 |---|---|---|---|
@@ -121,26 +124,22 @@ con solo `crear()` / `actualizar()` / `eliminar()`. Todos extienden
 `local_mod_update_section` / `local_mod_delete_section`.
 
 ```python
-from moodle_recursos import MoodleUrlWS, MoodleTareaWS, MoodleRecursoArchivoWS, MoodleSeccionWS
+from moodle_recursos import MoodleUrlWS, MoodleSeccionWS
 
-seccion_ws = MoodleSeccionWS(url_base="https://evapreg.ister.edu.ec", token="TOKEN", tipo_moodle=1)
+seccion_ws = MoodleSeccionWS(url_base="https://tu-moodle.tld", token="TOKEN", tipo_moodle=1)
 r = seccion_ws.crear(courseid=123, name="Unidad 1", summary="<p>Fundamentos.</p>")
 sec = r["sectionnumber"]
-seccion_ws.actualizar(123, sec, summary="<p>Nueva descripción.</p>")
 
-url_ws = MoodleUrlWS(url_base="https://evapreg.ister.edu.ec", token="TOKEN", tipo_moodle=1)
+url_ws = MoodleUrlWS(url_base="https://tu-moodle.tld", token="TOKEN", tipo_moodle=1)
 r = url_ws.crear(123, sec, "Guía", externalurl="https://...")
 url_ws.actualizar(cmid=r["cmid"], name="Nuevo nombre")
 url_ws.eliminar(cmid=r["cmid"])
-
-tarea_ws = MoodleTareaWS(url_base="https://evapreg.ister.edu.ec", token="TOKEN", tipo_moodle=1)
-import time
-tarea_ws.crear(123, sec, "Entrega U1", duedate=int(time.time())+7*86400, grade=20)
-
-archivo_ws = MoodleRecursoArchivoWS(url_base="https://evapreg.ister.edu.ec", token="TOKEN", tipo_moodle=1)
-with open("silabo.pdf", "rb") as fh:
-    archivo_ws.crear(123, sec, "Sílabo", fh, "silabo.pdf")
 ```
+
+Ejemplo completo con las 7 clases (sección + los 6 tipos de módulo, crear +
+actualizar) en [`ejemplo_moodle_recursos.py`](ejemplo_moodle_recursos.py)
+(raíz del repo) — ajusta `URL_BASE`, `TOKEN` y `COURSE_ID` y corre
+`python ejemplo_moodle_recursos.py`.
 
 ## Notas de compatibilidad hacia adelante
 

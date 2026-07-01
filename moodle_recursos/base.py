@@ -14,7 +14,7 @@ from typing import Any, Dict, List, Optional
 
 from requests import post
 
-from ..moodle_webservice import MoodleWebService  # ajusta a tu proyecto
+from moodle_webservice import MoodleWebService  # ajusta a tu proyecto
 
 logger = logging.getLogger(__name__)
 
