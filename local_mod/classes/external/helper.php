@@ -13,6 +13,17 @@ use external_value;
 class helper {
 
     /**
+     * Campos internos del moduleinfo/course_modules que 'options' NUNCA debe
+     * poder tocar: add_moduleinfo()/update_moduleinfo() los usan tal cual
+     * (no los re-derivan del curso/cm ya validado), asi que dejarlos pasar
+     * permite crear/actualizar un modulo de otro tipo o pisar la instancia
+     * de otro curso saltandose el capability check ya hecho.
+     */
+    private const CAMPOS_PROTEGIDOS = [
+        'id', 'course', 'coursemodule', 'module', 'modulename', 'instance', 'section',
+    ];
+
+    /**
      * Estructura del parametro 'options': lista de pares {name, value}
      * con los campos especificos de cada tipo de modulo.
      */
@@ -28,12 +39,16 @@ class helper {
     }
 
     /**
-     * Vuelca los pares {name,value} sobre el objeto moduleinfo.
+     * Vuelca los pares {name,value} sobre el objeto moduleinfo, ignorando
+     * los campos protegidos (ver CAMPOS_PROTEGIDOS).
      * Coercion ligera: enteros limpios -> int; el resto queda como string.
      */
     public static function apply_options(\stdClass $moduleinfo, array $options) {
         foreach ($options as $opt) {
-            $name  = $opt['name'];
+            $name = $opt['name'];
+            if (in_array($name, self::CAMPOS_PROTEGIDOS, true)) {
+                continue;
+            }
             $value = $opt['value'];
             if (is_numeric($value) && (string)(int)$value === (string)$value) {
                 $value = (int)$value;

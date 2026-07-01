@@ -28,38 +28,24 @@ carpeta raíz dentro del zip debe llamarse **`mod`**, no `local_mod`. Si el
 zip trae la carpeta como `local_mod/`, el instalador de plugins la rechaza o
 la instala con el nombre equivocado.
 
-En este repo el código vive en la carpeta `local_mod/`, así que hay que
-renombrarla a `mod` al comprimir. No comprimas la carpeta `local_mod/` tal
-cual.
-
-**PowerShell (Windows):**
-
-```powershell
-Copy-Item -Recurse -Force local_mod mod
-Compress-Archive -Path mod -DestinationPath local_mod.zip -Force
-Remove-Item -Recurse -Force mod
-```
-
-**Bash / Git Bash:**
+Usa `build_plugin_zip.py` (raíz del repo) para generarlo: empaqueta
+`local_mod/` renombrando la carpeta a `mod` dentro del zip y verifica el
+resultado automáticamente.
 
 ```bash
-cp -r local_mod mod
-zip -r local_mod.zip mod
-rm -rf mod
+python build_plugin_zip.py
 ```
 
-Verifica el resultado antes de subirlo — la primera entrada del listado debe
-ser `mod/`, no `local_mod/`:
+Genera `build/local_mod.zip` (carpeta ignorada por git, se regenera cuando
+quieras). Parámetros opcionales:
 
 ```bash
-unzip -l local_mod.zip | head
+python build_plugin_zip.py --source local_mod --output build/local_mod.zip --carpeta-zip mod
 ```
 
-> El `local_mod.zip` que ya está en el repo fue generado comprimiendo
-> `local_mod/` directamente (carpeta raíz `local_mod/` dentro del zip) — está
-> mal para la Opción A y conviene regenerarlo con los comandos de arriba antes
-> de subirlo por la interfaz. Para la Opción B (copiar archivos a mano) no
-> afecta, porque ahí el nombre de carpeta se controla al copiar.
+Ese es el archivo que subes en *Administración del sitio → Plugins →
+Instalar plugins* (Opción A). Para la Opción B (copiar archivos a mano) no
+aplica, porque ahí el nombre de carpeta se controla al copiar.
 
 ## 2. Habilitar Web Services
 
