@@ -72,6 +72,18 @@ módulo.
 - **quiz**: `grade`, `timeopen`, `timeclose`, `grademethod`, `preferredbehaviour`
 - **h5pactivity**: `packagefile` (itemid del draft), `enabletracking`, `grademethod`
 
+### Clases y métodos PHP (`local_mod/classes/external/`)
+
+| Clase | Métodos | Envuelve |
+|---|---|---|
+| `create_module` | `execute_parameters()`, `execute()`, `execute_returns()` | `add_moduleinfo()` |
+| `update_module` | `execute_parameters()`, `execute()`, `execute_returns()` | `get_moduleinfo_data()` + `update_moduleinfo()` |
+| `delete_module` | `execute_parameters()`, `execute()`, `execute_returns()` | `course_delete_module()` |
+| `create_section` | `execute_parameters()`, `execute()`, `execute_returns()` | `course_create_section()` + `course_update_section()` |
+| `update_section` | `execute_parameters()`, `execute()`, `execute_returns()` | `course_update_section()` |
+| `delete_section` | `execute_parameters()`, `execute()`, `execute_returns()` | `course_delete_section()` |
+| `helper` | `options_structure()`, `apply_options()`, `set_common_defaults()` | utilidades compartidas por las 6 clases de arriba |
+
 ## Archivos (resource / h5p)
 
 Se sube primero al *draft area* vía `POST /webservice/upload.php` (el
@@ -82,35 +94,52 @@ Python lo hace solo dentro de `crear_recurso_archivo()` y `crear_h5p()`.
 ## Manejo de errores
 
 Toda respuesta que sea un dict con clave `exception` indica error de Moodle
-(revisa `message`). El helper `MoodleModulosWS._es_error(resp)` lo detecta.
+(revisa `message`). El helper estático `es_error(resp)` (en `MoodleRecursoWS`
+y en `MoodleSeccionWS`) lo detecta.
 
 ## Cliente Python
 
-`moodle_modulos_ws.py` extiende tu `MoodleWebService`. Ajusta el import a tu
-proyecto.
+Paquete `moodle_recursos/`: un cliente simple por tipo de recurso, cada uno
+con solo `crear()` / `actualizar()` / `eliminar()`. Todos extienden
+`MoodleWebService` (ajusta el import a tu proyecto) salvo donde se indica.
+
+| Clase | Archivo | Tipo Moodle | Funciones |
+|---|---|---|---|
+| `MoodleRecursoWS` | `moodle_recursos/base.py` | (base común) | `_opts()`, `es_error()`, `subir_archivo_draft()`, `_crear()`, `_actualizar()`, `eliminar()` |
+| `MoodleUrlWS` | `moodle_recursos/url.py` | `url` | `crear()`, `actualizar()`, `eliminar()` *(heredado)* |
+| `MoodleRecursoArchivoWS` | `moodle_recursos/recurso_archivo.py` | `resource` | `crear()`, `actualizar()`, `eliminar()` *(heredado)* |
+| `MoodleForoWS` | `moodle_recursos/foro.py` | `forum` | `crear()`, `actualizar()`, `eliminar()` *(heredado)* |
+| `MoodleTareaWS` | `moodle_recursos/tarea.py` | `assign` | `crear()`, `actualizar()`, `eliminar()` *(heredado)* |
+| `MoodleQuizWS` | `moodle_recursos/quiz.py` | `quiz` | `crear()`, `actualizar()`, `eliminar()` *(heredado)* |
+| `MoodleH5pWS` | `moodle_recursos/h5p.py` | `h5pactivity` | `crear()`, `actualizar()`, `eliminar()` *(heredado)* |
+| `MoodleSeccionWS` | `moodle_recursos/seccion.py` | secciones (no es modulo) | `crear()`, `actualizar()`, `eliminar()`, `es_error()` |
+
+`crear()`/`actualizar()` de cada clase de módulo llaman a `local_mod_create_module` /
+`local_mod_update_module` con el `modulename` fijo de esa clase; `eliminar()`
+(heredado de `MoodleRecursoWS`) llama a `local_mod_delete_module`.
+`MoodleSeccionWS` llama directo a `local_mod_create_section` /
+`local_mod_update_section` / `local_mod_delete_section`.
 
 ```python
-from .moodle_modulos_ws import MoodleModulosWS
+from moodle_recursos import MoodleUrlWS, MoodleTareaWS, MoodleRecursoArchivoWS, MoodleSeccionWS
 
-ws = MoodleModulosWS(url_base="https://evapreg.ister.edu.ec",
-                     token="TOKEN", tipo_moodle=1)
-
-# Sección con descripción
-r = ws.crear_seccion(courseid=123, name="Unidad 1", summary="<p>Fundamentos.</p>")
+seccion_ws = MoodleSeccionWS(url_base="https://evapreg.ister.edu.ec", token="TOKEN", tipo_moodle=1)
+r = seccion_ws.crear(courseid=123, name="Unidad 1", summary="<p>Fundamentos.</p>")
 sec = r["sectionnumber"]
-ws.actualizar_seccion(123, sec, summary="<p>Nueva descripción.</p>")
+seccion_ws.actualizar(123, sec, summary="<p>Nueva descripción.</p>")
 
-# Módulos dentro de la sección
-ws.crear_url(123, sec, "Guía", externalurl="https://...")
+url_ws = MoodleUrlWS(url_base="https://evapreg.ister.edu.ec", token="TOKEN", tipo_moodle=1)
+r = url_ws.crear(123, sec, "Guía", externalurl="https://...")
+url_ws.actualizar(cmid=r["cmid"], name="Nuevo nombre")
+url_ws.eliminar(cmid=r["cmid"])
+
+tarea_ws = MoodleTareaWS(url_base="https://evapreg.ister.edu.ec", token="TOKEN", tipo_moodle=1)
 import time
-ws.crear_tarea(123, sec, "Entrega U1", duedate=int(time.time())+7*86400, grade=20)
-with open("silabo.pdf", "rb") as fh:
-    ws.crear_recurso_archivo(123, sec, "Sílabo", fh, "silabo.pdf")
+tarea_ws.crear(123, sec, "Entrega U1", duedate=int(time.time())+7*86400, grade=20)
 
-# Editar / eliminar
-ws.actualizar_modulo(cmid=456, name="Nuevo nombre")
-ws.eliminar_modulo(cmid=456)
-ws.eliminar_seccion(123, sec, force=1)
+archivo_ws = MoodleRecursoArchivoWS(url_base="https://evapreg.ister.edu.ec", token="TOKEN", tipo_moodle=1)
+with open("silabo.pdf", "rb") as fh:
+    archivo_ws.crear(123, sec, "Sílabo", fh, "silabo.pdf")
 ```
 
 ## Notas de compatibilidad hacia adelante

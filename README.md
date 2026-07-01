@@ -11,6 +11,14 @@ cualquier otro módulo de forma genérica; más el CRUD de secciones (con descri
 **Compatible Moodle 4.1 en adelante.** No toca tablas directamente: envuelve las
 funciones internas de Moodle, las mismas que usa la interfaz.
 
+## Funciones del Web Service
+
+Módulos: `local_mod_create_module`, `local_mod_update_module`, `local_mod_delete_module`
+
+Secciones: `local_mod_create_section`, `local_mod_update_section`, `local_mod_delete_section`
+
+Detalle de parámetros y capabilities en [README_GENERACION_API.md](README_GENERACION_API.md#funciones-expuestas).
+
 ## Documentación
 
 - **[INSTALACION.md](README_INSTALACION.md)** — instalar el plugin, habilitar Web
