@@ -60,6 +60,13 @@ class update_module extends external_api {
 
         $data = helper::apply_options($data, $params['options']);
 
+        if (isset($data->gradepass) && $data->gradepass !== '' && $data->gradepass !== null) {
+            $gradepass = unformat_float($data->gradepass, true);
+            if ($gradepass !== false) {
+                $data->gradepass = $gradepass;
+            }
+        }
+
         list($cmrec, $data) = update_moduleinfo($cmrec, $data, $course, null);
 
         return ['cmid' => $cm->id, 'status' => true];
