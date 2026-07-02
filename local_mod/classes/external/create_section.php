@@ -15,10 +15,11 @@ use context_course;
  * fija nombre, descripcion (summary) y visibilidad.
  *
  * Soporta migrar secciones en cualquier orden (ej. 1, 10, 2, 4, 3): si se
- * pide una position mas alla del final del curso, se crean vacias las
- * secciones intermedias que falten; si la position pedida ya existe (por
- * ser un hueco creado antes, o por pedirse dos veces), se reutiliza esa
- * misma seccion en vez de desplazar (shift) las que le siguen.
+ * pide una position mas alla del final del curso, NO se rellenan las
+ * secciones intermedias que falten -quedan sin crear hasta que se pidan
+ * explicitamente-; si la position pedida ya existe (por haberse creado
+ * antes, o por pedirse dos veces), se reutiliza esa misma seccion en vez
+ * de desplazar (shift) las que le siguen.
  */
 class create_section extends external_api {
 
@@ -55,24 +56,19 @@ class create_section extends external_api {
         // INSERCION relativa, no como "el numero de seccion final": si piden
         // una position mas alla del final la recorta a lastsection+1 sin
         // avisar, y si position ya existe desplaza (shift) todas las
-        // secciones siguientes (y sus modulos) una posicion arriba. Migrar
-        // fuera de orden (ej. 1, 10, 2, 4, 3) con esa semantica va corriendo
-        // de numero secciones ya creadas.
+        // secciones siguientes (y sus modulos) una posicion arriba.
         //
         // Aqui 'position' se trata como el numero de seccion ABSOLUTO que se
-        // quiere: si ya existe (porque se creo antes como hueco intermedio,
-        // o porque ya se habia pedido esa misma seccion), se reutiliza tal
-        // cual -sin shift-; si esta mas alla del final, se crean vacias antes
-        // las secciones intermedias que falten para no disparar el recorte.
+        // quiere: si ya existe (porque se creo antes, o porque ya se habia
+        // pedido esa misma seccion), se reutiliza tal cual -sin shift-; si
+        // esta mas alla del final, se crea directamente con ese numero
+        // pasando $skipcheck = true, que hace que course_create_section()
+        // NO recorte la position ni rellene/desplace nada -deja el hueco
+        // intermedio sin crear hasta que se pida explicitamente-.
         if ($position > 0) {
             $sectioninfo = $DB->get_record('course_sections', ['course' => $course->id, 'section' => $position]);
             if (!$sectioninfo) {
-                $lastsection = (int)$DB->get_field_sql(
-                    'SELECT MAX(section) FROM {course_sections} WHERE course = ?', [$course->id]);
-                for ($i = $lastsection + 1; $i < $position; $i++) {
-                    course_create_section($course, $i);
-                }
-                $sectioninfo = course_create_section($course, $position);
+                $sectioninfo = course_create_section($course, $position, true);
             }
         } else {
             // 0 = al final: comportamiento nativo de course_create_section().
