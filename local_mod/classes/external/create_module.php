@@ -30,6 +30,7 @@ class create_module extends external_api {
     public static function execute($courseid, $section, $modulename, $name, $intro = '', $visible = 1, $options = []) {
         global $DB, $CFG;
         require_once($CFG->dirroot . '/course/modlib.php');
+        require_once($CFG->libdir . '/gradelib.php');
 
         $params = self::validate_parameters(self::execute_parameters(), [
             'courseid'   => $courseid,

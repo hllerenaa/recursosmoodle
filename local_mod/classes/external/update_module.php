@@ -28,6 +28,7 @@ class update_module extends external_api {
     public static function execute($cmid, $name = null, $intro = null, $visible = null, $options = []) {
         global $CFG;
         require_once($CFG->dirroot . '/course/modlib.php');
+        require_once($CFG->libdir . '/gradelib.php');
 
         $params = self::validate_parameters(self::execute_parameters(), [
             'cmid'    => $cmid,
