@@ -9,7 +9,7 @@ Python incluido. Para instalar el plugin primero, ver
 | Campo | Valor |
 |---|---|
 | Componente | `local_mod` |
-| Versión (`$plugin->version`) | `2026070101` |
+| Versión (`$plugin->version`) | `2026070102` |
 | Release | `1.1.0` |
 | Moodle requerido (`$plugin->requires`) | `2022112800` (Moodle 4.1) |
 | Madurez (`$plugin->maturity`) | `MATURITY_STABLE` |
@@ -55,13 +55,31 @@ generar el token.
 
 | Función WS | Uso | Parámetros clave | Capability |
 |---|---|---|---|
-| `local_mod_create_section` | Crear | `courseid`, `position` (0=final), `name?`, `summary?`, `visible?` | `moodle/course:update` |
+| `local_mod_create_section` | Crear | `courseid`, `position` (0=final, N=número de sección absoluto), `name?`, `summary?`, `visible?` | `moodle/course:update` |
 | `local_mod_update_section` | Actualizar | `courseid`, `sectionnumber`, `name?`, `summary?`, `visible?` | `moodle/course:update` |
 | `local_mod_delete_section` | Eliminar | `courseid`, `sectionnumber`, `force?` (1 = borra aunque tenga actividades) | `moodle/course:update` (+ `moodle/course:sectionvisibility` si oculta) |
 
 `summary` es la **descripción de la sección** (HTML). `options` (módulos) es
 una lista de pares `{name, value}` con los campos específicos del tipo de
 módulo.
+
+### `position` en `create_section`: número de sección absoluto, no posición de inserción
+
+`position` **no** es "insertar aquí desplazando lo demás" (así funciona
+`course_create_section()` de Moodle core si se le pasa el valor directo).
+`local_mod_create_section` lo trata como **el número de sección final que
+quieres**, así que se puede migrar fuera de orden sin romper nada:
+
+- Si `position` es mayor que el máximo actual, se crean vacías las secciones
+  intermedias que falten (ej. pedir `position=10` con curso hasta la 2 crea
+  3‑9 vacías y la 10 con tu contenido).
+- Si `position` ya existe (por ser uno de esos huecos, o por pedirse dos
+  veces), se **reutiliza esa misma sección** — no se dispara ningún shift, así
+  que las secciones ya creadas (con sus módulos) no cambian de número.
+
+Esto permite migrar en cualquier orden, por ejemplo `1, 10, 2, 4, 3`, y cada
+`position` termina siendo exactamente el `sectionnumber` que devuelve la
+función.
 
 ### Campos específicos de módulo habituales
 

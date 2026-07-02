@@ -10,8 +10,15 @@ use external_single_structure;
 use context_course;
 
 /**
- * Crea una seccion en un curso envolviendo course_create_section().
- * Opcionalmente fija nombre, descripcion (summary) y visibilidad.
+ * Crea (o reutiliza) una seccion en un curso, con 'position' como numero de
+ * seccion absoluto -no como posicion relativa de insercion-. Opcionalmente
+ * fija nombre, descripcion (summary) y visibilidad.
+ *
+ * Soporta migrar secciones en cualquier orden (ej. 1, 10, 2, 4, 3): si se
+ * pide una position mas alla del final del curso, se crean vacias las
+ * secciones intermedias que falten; si la position pedida ya existe (por
+ * ser un hueco creado antes, o por pedirse dos veces), se reutiliza esa
+ * misma seccion en vez de desplazar (shift) las que le siguen.
  */
 class create_section extends external_api {
 
@@ -42,8 +49,35 @@ class create_section extends external_api {
         self::validate_context($context);
         require_capability('moodle/course:update', $context);
 
-        // Crea la seccion y ajusta la secuencia del curso automaticamente.
-        $sectioninfo = course_create_section($course, $params['position']);
+        $position = $params['position'];
+
+        // course_create_section() trata 'position' como una posicion de
+        // INSERCION relativa, no como "el numero de seccion final": si piden
+        // una position mas alla del final la recorta a lastsection+1 sin
+        // avisar, y si position ya existe desplaza (shift) todas las
+        // secciones siguientes (y sus modulos) una posicion arriba. Migrar
+        // fuera de orden (ej. 1, 10, 2, 4, 3) con esa semantica va corriendo
+        // de numero secciones ya creadas.
+        //
+        // Aqui 'position' se trata como el numero de seccion ABSOLUTO que se
+        // quiere: si ya existe (porque se creo antes como hueco intermedio,
+        // o porque ya se habia pedido esa misma seccion), se reutiliza tal
+        // cual -sin shift-; si esta mas alla del final, se crean vacias antes
+        // las secciones intermedias que falten para no disparar el recorte.
+        if ($position > 0) {
+            $sectioninfo = $DB->get_record('course_sections', ['course' => $course->id, 'section' => $position]);
+            if (!$sectioninfo) {
+                $lastsection = (int)$DB->get_field_sql(
+                    'SELECT MAX(section) FROM {course_sections} WHERE course = ?', [$course->id]);
+                for ($i = $lastsection + 1; $i < $position; $i++) {
+                    course_create_section($course, $i);
+                }
+                $sectioninfo = course_create_section($course, $position);
+            }
+        } else {
+            // 0 = al final: comportamiento nativo de course_create_section().
+            $sectioninfo = course_create_section($course, $position);
+        }
 
         $data = new \stdClass();
         $needupdate = false;

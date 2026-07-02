@@ -22,7 +22,10 @@ class MoodleSeccionWS(MoodleWebService):
 
     def crear(self, courseid: int, position: int = 0, name: Optional[str] = None,
               summary: Optional[str] = None, visible: int = 1) -> Any:
-        """`position=0` agrega la seccion al final. `summary` es la descripcion (HTML)."""
+        """`position=0` agrega la seccion al final; `position=N` crea/reutiliza
+        la seccion N como numero absoluto (permite migrar fuera de orden, ej.
+        1, 10, 2, 4, 3, sin desplazar secciones ya creadas). `summary` es la
+        descripcion (HTML)."""
         kwargs = {"courseid": courseid, "position": position, "visible": visible}
         if name is not None:
             kwargs["name"] = name
