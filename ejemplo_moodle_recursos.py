@@ -12,6 +12,7 @@ Uso:
 import time
 
 from moodle_recursos import (
+    MoodleBancoPreguntasWS,
     MoodleForoWS,
     MoodleH5pWS,
     MoodleQuizWS,
@@ -93,6 +94,54 @@ def main():
     cmid_quiz = r.get("cmid") if isinstance(r, dict) else None
     if cmid_quiz:
         mostrar("actualizar quiz", quiz_ws.actualizar(cmid_quiz, grade=30))
+
+    # ------------------------------------------------------------------ #
+    #  Banco de preguntas del quiz (sync + vaciar)                       #
+    # ------------------------------------------------------------------ #
+    banco_ws = MoodleBancoPreguntasWS(**kwargs)
+    if cmid_quiz:
+        preguntas = [
+            {
+                "indice": 1,
+                "qtype": "multichoice",
+                "nombre": "Capital de Ecuador",
+                "enunciado": "<p>Cual es la capital de Ecuador?</p>",
+                "retroalimentacion": "Quito es la capital.",
+                "puntaje": 1,
+                "multiple": 0,
+                "respuestas": [
+                    {"detalle": "Quito", "fraccion": 100},
+                    {"detalle": "Guayaquil", "fraccion": 0},
+                    {"detalle": "Cuenca", "fraccion": 0},
+                ],
+            },
+            {
+                "indice": 2,
+                "qtype": "truefalse",
+                "nombre": "Ecuador esta en Sudamerica",
+                "enunciado": "<p>Ecuador esta ubicado en Sudamerica.</p>",
+                "puntaje": 1,
+                "vfcorrecta": 1,
+            },
+            {
+                "indice": 3,
+                "qtype": "essay",
+                "nombre": "Reflexion Unidad 1",
+                "enunciado": "<p>Describe en tus palabras lo aprendido en la Unidad 1.</p>",
+                "retroalimentacion": "Se evalua manualmente.",
+                "puntaje": 5,
+                "essaytextorequerido": 1,
+                "essayadjuntos": 0,
+            },
+        ]
+        r = mostrar("sincronizar banco de preguntas", banco_ws.sync_question_bank(
+            cmid_quiz, preguntas,
+        ))
+        # Reintentar con el mismo banco es seguro (idempotente): vacia y recrea.
+        # r = mostrar("resincronizar banco de preguntas", banco_ws.sync_question_bank(
+        #     cmid_quiz, preguntas,
+        # ))
+        mostrar("vaciar banco de preguntas", banco_ws.delete_question_bank(cmid_quiz))
 
     # ------------------------------------------------------------------ #
     #  Recurso archivo (requiere un archivo local de ejemplo)             #

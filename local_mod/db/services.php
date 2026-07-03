@@ -53,6 +53,24 @@ $functions = [
         'capabilities' => 'moodle/course:update',
         'ajax'         => false,
     ],
+
+    // ----- Banco de preguntas de un quiz -----
+    'local_mod_sync_question_bank' => [
+        'classname'    => 'local_mod\external\sync_question_bank',
+        'methodname'   => 'execute',
+        'description'  => 'Sincroniza (idempotente) el banco de preguntas de un quiz: recrea la categoria propia y sus preguntas y arma los slots (fijos o aleatorios).',
+        'type'         => 'write',
+        'capabilities' => 'moodle/question:add',
+        'ajax'         => false,
+    ],
+    'local_mod_delete_question_bank' => [
+        'classname'    => 'local_mod\external\delete_question_bank',
+        'methodname'   => 'execute',
+        'description'  => 'Vacia el banco de preguntas propio de un quiz (categoria {categoriaprefijo}{cmid}, por defecto banco_preguntas_{cmid}) y elimina sus slots.',
+        'type'         => 'write',
+        'capabilities' => 'moodle/question:managecategory, moodle/question:editall',
+        'ajax'         => false,
+    ],
 ];
 
 $services = [
@@ -64,6 +82,8 @@ $services = [
             'local_mod_create_section',
             'local_mod_update_section',
             'local_mod_delete_section',
+            'local_mod_sync_question_bank',
+            'local_mod_delete_question_bank',
             // Funciones core utiles para el mismo flujo:
             'core_course_get_contents',
             'core_course_get_courses_by_field',

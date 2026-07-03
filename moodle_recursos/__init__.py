@@ -15,6 +15,7 @@ Uso:
 from .base import MoodleRecursoWS
 from .foro import MoodleForoWS
 from .h5p import MoodleH5pWS
+from .questionbank import MoodleBancoPreguntasWS
 from .quiz import MoodleQuizWS
 from .recurso_archivo import MoodleRecursoArchivoWS
 from .seccion import MoodleSeccionWS
@@ -30,4 +31,5 @@ __all__ = [
     "MoodleQuizWS",
     "MoodleH5pWS",
     "MoodleSeccionWS",
+    "MoodleBancoPreguntasWS",
 ]

@@ -1,5 +1,6 @@
 """Cliente simple para tests (mod_quiz) via local_mod. Solo crea el contenedor;
-las preguntas se agregan aparte (qbank)."""
+el banco de preguntas se sincroniza aparte con MoodleBancoPreguntasWS
+(questionbank.py)."""
 
 from typing import Any, Dict, Optional
 
