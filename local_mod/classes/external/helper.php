@@ -3,9 +3,11 @@ namespace local_mod\external;
 
 defined('MOODLE_INTERNAL') || die();
 
-use external_multiple_structure;
-use external_single_structure;
-use external_value;
+require_once(__DIR__ . '/../../locallib.php');
+
+use core_external\external_multiple_structure;
+use core_external\external_single_structure;
+use core_external\external_value;
 
 /**
  * Utilidades compartidas por las external functions.

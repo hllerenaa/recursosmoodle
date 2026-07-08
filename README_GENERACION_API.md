@@ -9,8 +9,8 @@ Python incluido. Para instalar el plugin primero, ver
 | Campo | Valor |
 |---|---|
 | Componente | `local_mod` |
-| Versión (`$plugin->version`) | `2026070301` |
-| Release | `1.2.0` |
+| Versión (`$plugin->version`) | `2026070800` |
+| Release | `1.2.1` |
 | Moodle requerido (`$plugin->requires`) | `2022112800` (Moodle 4.1) |
 | Madurez (`$plugin->maturity`) | `MATURITY_STABLE` |
 
@@ -276,8 +276,11 @@ actualizar) en [`ejemplo_moodle_recursos.py`](ejemplo_moodle_recursos.py)
 
 ## Notas de compatibilidad hacia adelante
 
-- Usa los nombres de clase del External API clásicos (`external_api`,
-  `external_function_parameters`…), que en 4.2+ quedaron como alias
-  deprecados pero funcionales; el plugin corre igual en 4.1–4.5. Si algún día
-  los eliminan, se migra a `\core_external\...` sin cambiar la lógica.
+- Desde 1.2.1 usa los nombres con namespace `core_external\...` (los alias
+  globales clásicos `external_api`, `external_function_parameters`… solo
+  existen en 4.2+ si algo carga `lib/externallib.php`, que además desaparece
+  en 4.6+; depender de ellos daba `Class "external_api" not found` según qué
+  otros plugins tuviera el sitio). En Moodle 4.1, donde `core_external` aún
+  no existe, `local_mod/locallib.php` crea los alias inversos — el plugin
+  corre igual en 4.1 hasta 4.6+.
 - La sección 0 no se puede eliminar (limitación de Moodle).
