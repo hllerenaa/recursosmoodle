@@ -5,7 +5,7 @@
 // core_external y los alias globales legacy (external_api, external_value,
 // etc.) solo existen si algo hace require de lib/externallib.php — archivo
 // que ademas desaparece en Moodle 4.6+. Por eso el plugin usa siempre los
-// nombres core_external\* y este shim los crea en Moodle 4.1, donde ese
+// nombres core_external\* y este shim los crea en Moodle 4.0 y 4.1, donde ese
 // namespace todavia no existe.
 defined('MOODLE_INTERNAL') || die();
 

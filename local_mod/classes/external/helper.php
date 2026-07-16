@@ -104,10 +104,10 @@ class helper {
      * Obtiene (o crea) la categoria propia del banco en el contexto del
      * modulo. Nombre: {prefijo}{cmid}. Idempotente.
      *
-     * Se apoya en question_get_top_category() (estable 4.1-4.5) para garantizar
+     * Se apoya en question_get_top_category() (estable 4.0-4.5) para garantizar
      * la categoria "top" del contexto y cuelga la nuestra debajo. La creacion es
      * una insercion de metadatos en {question_categories} (no hay API publica
-     * estable entre 4.1 y 4.5 para crear una categoria hija plana; question_delete_question
+     * estable entre 4.0 y 4.5 para crear una categoria hija plana; question_delete_question
      * / save_question si son estables y se usan para el contenido).
      */
     public static function ensure_category(\context_module $context, $prefijo = self::CATEGORIA_PREFIJO) {
@@ -145,7 +145,7 @@ class helper {
      *
      * Compatibilidad:
      *  - 4.2 - 4.5: la clase de settings es \mod_quiz\quiz_settings (refactor MDL-71691).
-     *  - 4.1:       la clase global es \quiz (mod/quiz/attemptlib.php).
+     *  - 4.0 - 4.1: la clase global es \quiz (mod/quiz/attemptlib.php).
      * En ambas ramas \mod_quiz\structure::create_for_quiz() existe y devuelve la
      * misma estructura manipulable de slots.
      */
@@ -220,7 +220,7 @@ class helper {
 
     /**
      * Agrega un slot fijo con una pregunta concreta y su maxmark.
-     * quiz_add_quiz_question() ha permanecido en mod/quiz/locallib.php de 4.1 a 4.5
+     * quiz_add_quiz_question() ha permanecido en mod/quiz/locallib.php de 4.0 a 4.5
      * (marcada deprecada en versiones recientes pero funcional).
      */
     public static function add_fixed_slot($quiz, $questionid, $maxmark) {
@@ -240,13 +240,13 @@ class helper {
      * Compatibilidad (detectada en runtime):
      *  - 4.3 - 4.5: \mod_quiz\structure::add_random_questions($addonpage, $number, $filtercondition)
      *               (MDL-72321 movio el sorteo a condiciones de filtro).
-     *  - 4.1 - 4.2: funcion libre quiz_add_random_questions($quiz, $addonpage, $categoryid,
+     *  - 4.0 - 4.2: funcion libre quiz_add_random_questions($quiz, $addonpage, $categoryid,
      *               $number, $includesubcategories).
      * Si no existe ninguna via, se lanza moodle_exception.
      *
      * El maxmark de los slots aleatorios no lo fija ninguna de las dos APIs, asi que
      * tras agregarlos se recarga la estructura y se ajusta con
-     * \mod_quiz\structure::update_slot_maxmark() (estable 4.1-4.5) para los slots
+     * \mod_quiz\structure::update_slot_maxmark() (estable 4.0-4.5) para los slots
      * nuevos (id mayor al maximo previo).
      */
     public static function add_random_slots($quiz, $categoria, \context_module $context, $number, $maxmark) {
