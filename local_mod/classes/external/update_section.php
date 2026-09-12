@@ -10,6 +10,7 @@ use core_external\external_function_parameters;
 use core_external\external_value;
 use core_external\external_single_structure;
 use context_course;
+use local_mod\local\resumenes_curso;
 
 /**
  * Actualiza una seccion (nombre, descripcion/summary, visibilidad)
@@ -62,7 +63,14 @@ class update_section extends external_api {
             $data->visible = $params['visible'];
         }
 
-        course_update_section($course, $sectionrec, $data);
+        helper::ejecutar_mutacion_curso($course->id, 'actualizar_seccion:' . $sectionrec->id,
+            function() use ($course, $sectionrec, $context, $data) {
+                if (isset($data->summary)) {
+                    $data->summary = resumenes_curso::guardar_imagenes($data->summary, $context, $sectionrec->id);
+                }
+                course_update_section($course, $sectionrec, $data);
+            }
+        );
 
         return ['sectionid' => $sectionrec->id, 'status' => true];
     }

@@ -8,11 +8,116 @@ require_once(__DIR__ . '/../../locallib.php');
 use core_external\external_multiple_structure;
 use core_external\external_single_structure;
 use core_external\external_value;
+use local_mod\local\resumenes_curso;
 
 /**
  * Utilidades compartidas por las external functions.
  */
 class helper {
+
+    public static function ejecutar_mutacion_curso(int $cursoid, string $operacion, callable $accion) {
+        global $DB, $CFG;
+        require_once($CFG->dirroot . '/course/lib.php');
+
+        // La recuperacion debe ocurrir despues del rollback real, sin una transaccion ajena pendiente.
+        $DB->transactions_forbidden();
+        $pendiente = true;
+        $limitememoria = ini_get('memory_limit');
+        \core_shutdown_manager::register_function(function() use ($cursoid, $operacion, $limitememoria, &$pendiente) {
+            if ($pendiente) {
+                self::recuperar_cierre_inesperado($cursoid, $operacion, $limitememoria);
+            }
+        });
+
+        try {
+            self::invalidar_cache_curso($cursoid);
+            $transaccion = $DB->start_delegated_transaction();
+            resumenes_curso::normalizar($cursoid);
+            $resultado = $accion();
+            $transaccion->allow_commit();
+            return $resultado;
+        } catch (\Throwable $error) {
+            $recuperacion = '';
+            try {
+                // add_moduleinfo puede dejar transacciones delegadas internas abiertas al lanzar una excepcion.
+                if ($DB->is_transaction_started()) {
+                    $DB->force_transaction_rollback();
+                }
+                self::invalidar_cache_curso($cursoid);
+                $recuperacion = "\nRecuperacion de cache completada tras finalizar la transaccion.";
+            } catch (\Throwable $errorrecuperacion) {
+                $recuperacion = "\nError recuperando la cache: " . $errorrecuperacion->getMessage();
+            }
+
+            $traza = [$error->getFile() . ':' . $error->getLine()];
+            foreach ($error->getTrace() as $paso) {
+                $traza[] = ($paso['file'] ?? '') . ':' . ($paso['line'] ?? '') . ' ' .
+                    ($paso['class'] ?? '') . ($paso['type'] ?? '') . ($paso['function'] ?? '');
+            }
+            $detalle = 'local_mod: ' . $operacion . ', curso=' . $cursoid . "\n" .
+                get_class($error) . ': ' . $error->getMessage() . "\n" .
+                ($error->debuginfo ?? '') . "\n" . implode("\n", $traza) . $recuperacion;
+            error_log($detalle);
+
+            if ($error instanceof \moodle_exception) {
+                $error->debuginfo = $detalle;
+                throw $error;
+            }
+            throw new \moodle_exception('errormutacioncurso', 'local_mod', '', null, $detalle);
+        } finally {
+            $pendiente = false;
+        }
+    }
+
+    private static function recuperar_cierre_inesperado(int $cursoid, string $operacion, string $limitememoria): void {
+        global $DB;
+
+        $error = error_get_last();
+        $detalle = 'local_mod: cierre inesperado en ' . $operacion . ', curso=' . $cursoid .
+            ', memory_limit=' . $limitememoria . "\n" .
+            ($error['message'] ?? 'La operacion termino sin devolver el control.') . "\n" .
+            ($error['file'] ?? '') . ':' . ($error['line'] ?? '');
+        try {
+            if ($DB->is_transaction_started()) {
+                $DB->force_transaction_rollback();
+            }
+            self::invalidar_cache_curso($cursoid);
+            $detalle .= "\nRecuperacion de cache completada tras finalizar la transaccion.";
+        } catch (\Throwable $errorrecuperacion) {
+            $detalle .= "\nError recuperando la cache: " . $errorrecuperacion->getMessage();
+        }
+        error_log($detalle);
+
+        if (defined('WS_SERVER') && WS_SERVER) {
+            $respuesta = [
+                'exception' => 'local_mod_fatal_error',
+                'errorcode' => 'errorfatalphp',
+                'message' => get_string('errorfatalphp', 'local_mod'),
+            ];
+            if (debugging()) {
+                $respuesta['debuginfo'] = $detalle;
+            }
+            if (!headers_sent()) {
+                http_response_code(500);
+                header('Content-Type: application/json; charset=utf-8');
+            }
+            echo json_encode($respuesta);
+        }
+    }
+
+    private static function invalidar_cache_curso(int $cursoid): void {
+        // La cache MUC no participa del rollback; su revision puede superar la que quedo en la BD.
+        $cache = \cache::make('core', 'coursemodinfo');
+        if (!$cache->check_lock_state($cursoid)) {
+            $cache->acquire_lock($cursoid);
+        }
+        try {
+            $cache->delete($cursoid);
+        } finally {
+            $cache->release_lock($cursoid);
+        }
+        rebuild_course_cache($cursoid, true);
+    }
 
     /**
      * Campos internos del moduleinfo/course_modules que 'options' NUNCA debe

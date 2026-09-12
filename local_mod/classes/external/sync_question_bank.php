@@ -86,45 +86,45 @@ class sync_question_bank extends external_api {
                 'El cuestionario ya tiene intentos; no se puede sincronizar el banco de preguntas.');
         }
 
-        $transaction = $DB->start_delegated_transaction();
+        return helper::ejecutar_mutacion_curso($cm->course, 'sincronizar_banco:' . $cm->id,
+            function() use ($quiz, $context, $params, $DB) {
+                helper::wipe_question_bank($quiz, $context, $params['categoriaprefijo']);
+                $categoria = helper::ensure_category($context, $params['categoriaprefijo']);
 
-        helper::wipe_question_bank($quiz, $context, $params['categoriaprefijo']);
-        $categoria = helper::ensure_category($context, $params['categoriaprefijo']);
+                $mapeo   = [];
+                $creadas = [];
+                foreach ($params['preguntas'] as $p) {
+                    list($qid, $qbeid) = self::crear_pregunta($p, $categoria, $context);
+                    $mapeo[] = [
+                        'indice'              => (int) $p['indice'],
+                        'questionid'          => $qid,
+                        'questionbankentryid' => $qbeid,
+                    ];
+                    $creadas[] = ['questionid' => $qid, 'puntaje' => (float) $p['puntaje']];
+                }
 
-        $mapeo   = [];
-        $creadas = [];
-        foreach ($params['preguntas'] as $p) {
-            list($qid, $qbeid) = self::crear_pregunta($p, $categoria, $context);
-            $mapeo[] = [
-                'indice'              => (int) $p['indice'],
-                'questionid'          => $qid,
-                'questionbankentryid' => $qbeid,
-            ];
-            $creadas[] = ['questionid' => $qid, 'puntaje' => (float) $p['puntaje']];
-        }
+                if (!empty($params['aleatorio'])) {
+                    $n = (int) $params['cantidadaleatorias'];
+                    if ($n > 0) {
+                        helper::add_random_slots($quiz, $categoria, $context, $n, (float) $params['puntajealeatorio']);
+                    }
+                } else {
+                    foreach ($creadas as $c) {
+                        helper::add_fixed_slot($quiz, $c['questionid'], $c['puntaje']);
+                    }
+                }
 
-        if (!empty($params['aleatorio'])) {
-            $n = (int) $params['cantidadaleatorias'];
-            if ($n > 0) {
-                helper::add_random_slots($quiz, $categoria, $context, $n, (float) $params['puntajealeatorio']);
+                quiz_update_sumgrades($quiz);
+                $quiz = $DB->get_record('quiz', ['id' => $quiz->id], '*', MUST_EXIST);
+
+                return [
+                    'success'    => true,
+                    'categoryid' => (int) $categoria->id,
+                    'sumgrades'  => (float) ($quiz->sumgrades ?? 0),
+                    'preguntas'  => $mapeo,
+                ];
             }
-        } else {
-            foreach ($creadas as $c) {
-                helper::add_fixed_slot($quiz, $c['questionid'], $c['puntaje']);
-            }
-        }
-
-        quiz_update_sumgrades($quiz);
-        $quiz = $DB->get_record('quiz', ['id' => $quiz->id], '*', MUST_EXIST);
-
-        $transaction->allow_commit();
-
-        return [
-            'success'    => true,
-            'categoryid' => (int) $categoria->id,
-            'sumgrades'  => (float) ($quiz->sumgrades ?? 0),
-            'preguntas'  => $mapeo,
-        ];
+        );
     }
 
     public static function execute_returns() {

@@ -69,7 +69,28 @@ class create_module extends external_api {
 
         // add_moduleinfo() crea el modulo, el course_module, el contexto,
         // el grade_item (si aplica) y lo coloca en la seccion. Misma logica que modedit.php.
-        $moduleinfo = add_moduleinfo($moduleinfo, $course);
+        try {
+            $moduleinfo = helper::ejecutar_mutacion_curso(
+                $course->id,
+                'crear_modulo:' . $params['modulename'],
+                function() use ($moduleinfo, $course) {
+                    return add_moduleinfo($moduleinfo, $course);
+                }
+            );
+        } catch (\Throwable $error) {
+            $respuesta = [
+                'cmid' => 0,
+                'instance' => 0,
+                'modulename' => $params['modulename'],
+                'exception' => get_class($error),
+                'errorcode' => $error->errorcode ?? 'errormutacioncurso',
+                'message' => $error->getMessage(),
+            ];
+            if (debugging()) {
+                $respuesta['debuginfo'] = $error->debuginfo ?? '';
+            }
+            return $respuesta;
+        }
 
         return [
             'cmid'       => $moduleinfo->coursemodule,
@@ -83,6 +104,10 @@ class create_module extends external_api {
             'cmid'       => new external_value(PARAM_INT,       'course module id creado'),
             'instance'   => new external_value(PARAM_INT,       'id de la instancia del modulo'),
             'modulename' => new external_value(PARAM_COMPONENT, 'tipo de modulo'),
+            'exception' => new external_value(PARAM_RAW, 'Clase de excepcion si fallo la creacion', VALUE_OPTIONAL),
+            'errorcode' => new external_value(PARAM_RAW, 'Codigo de error Moodle', VALUE_OPTIONAL),
+            'message' => new external_value(PARAM_RAW, 'Mensaje de error', VALUE_OPTIONAL),
+            'debuginfo' => new external_value(PARAM_RAW, 'Detalle disponible con depuracion activada', VALUE_OPTIONAL),
         ]);
     }
 }

@@ -4,7 +4,7 @@
 defined('MOODLE_INTERNAL') || die();
 
 $plugin->component = 'local_mod';
-$plugin->version   = 2026071500;   // YYYYMMDDXX
+$plugin->version   = 2026091103;   // YYYYMMDDXX
 $plugin->requires  = 2022041900;   // Moodle 4.0
 $plugin->maturity  = MATURITY_STABLE;
-$plugin->release   = '1.2.2';
+$plugin->release   = '1.2.6';

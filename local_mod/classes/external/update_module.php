@@ -46,32 +46,34 @@ class update_module extends external_api {
         self::validate_context($context);
         require_capability('moodle/course:manageactivities', $context);
 
-        // Datos actuales del modulo (para no sobreescribir con vacios).
-        list($cmrec, $ctx, $module, $data, $cw) = get_moduleinfo_data($cm, $course);
+        return helper::ejecutar_mutacion_curso($course->id, 'actualizar_modulo:' . $cm->id,
+            function() use ($cm, $course, $params) {
+                list($cmrec, $ctx, $module, $data, $cw) = get_moduleinfo_data($cm, $course);
 
-        if ($params['name'] !== null) {
-            $data->name = $params['name'];
-        }
-        if ($params['intro'] !== null) {
-            $data->intro = $params['intro'];
-            $data->introformat = FORMAT_HTML;
-        }
-        if ($params['visible'] !== null) {
-            $data->visible = $params['visible'];
-        }
+                if ($params['name'] !== null) {
+                    $data->name = $params['name'];
+                }
+                if ($params['intro'] !== null) {
+                    $data->intro = $params['intro'];
+                    $data->introformat = FORMAT_HTML;
+                }
+                if ($params['visible'] !== null) {
+                    $data->visible = $params['visible'];
+                }
 
-        $data = helper::apply_options($data, $params['options']);
+                $data = helper::apply_options($data, $params['options']);
 
-        if (isset($data->gradepass) && $data->gradepass !== '' && $data->gradepass !== null) {
-            $gradepass = unformat_float($data->gradepass, true);
-            if ($gradepass !== false) {
-                $data->gradepass = $gradepass;
+                if (isset($data->gradepass) && $data->gradepass !== '' && $data->gradepass !== null) {
+                    $gradepass = unformat_float($data->gradepass, true);
+                    if ($gradepass !== false) {
+                        $data->gradepass = $gradepass;
+                    }
+                }
+
+                update_moduleinfo($cmrec, $data, $course, null);
+                return ['cmid' => $cm->id, 'status' => true];
             }
-        }
-
-        list($cmrec, $data) = update_moduleinfo($cmrec, $data, $course, null);
-
-        return ['cmid' => $cm->id, 'status' => true];
+        );
     }
 
     public static function execute_returns() {

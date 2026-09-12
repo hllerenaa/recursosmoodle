@@ -10,6 +10,7 @@ use core_external\external_function_parameters;
 use core_external\external_value;
 use core_external\external_single_structure;
 use context_course;
+use local_mod\local\resumenes_curso;
 
 /**
  * Crea (o reutiliza) una seccion en un curso, con 'position' como numero de
@@ -97,7 +98,14 @@ class create_section extends external_api {
         }
         if ($needupdate) {
             $sectionrec = $DB->get_record('course_sections', ['id' => $sectioninfo->id], '*', MUST_EXIST);
-            course_update_section($course, $sectionrec, $data);
+            helper::ejecutar_mutacion_curso($course->id, 'actualizar_seccion_creada:' . $sectionrec->id,
+                function() use ($course, $sectionrec, $context, $data) {
+                    if (isset($data->summary)) {
+                        $data->summary = resumenes_curso::guardar_imagenes($data->summary, $context, $sectionrec->id);
+                    }
+                    course_update_section($course, $sectionrec, $data);
+                }
+            );
         }
 
         return [
