@@ -8,3 +8,4 @@ $string['bancoerrorqtype'] = 'Unsupported question type: {$a}';
 $string['bancoerrorslotfijo'] = 'No API available to add the fixed slot in this Moodle version.';
 $string['bancoerrorslotaleatorio'] = 'No API available to add random questions in this Moodle version.';
 $string['bancoerrorquizsettings'] = 'Quiz structure API not found in this Moodle version.';
+$string['bancoerrorimagen'] = 'Answer {$a} not found to save its image.';

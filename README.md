@@ -19,6 +19,21 @@ Secciones: `local_mod_create_section`, `local_mod_update_section`, `local_mod_de
 
 Detalle de parámetros y capabilities en [README_GENERACION_API.md](README_GENERACION_API.md#funciones-expuestas).
 
+## Imágenes en el banco de preguntas (1.2.8)
+
+`local_mod_sync_question_bank` convierte las imágenes base64 (`data:image/...`)
+del enunciado, la retroalimentación general, las respuestas de opción múltiple
+y la información para el calificador (ensayo) en archivos de la pregunta, y
+reescribe el texto con `@@PLUGINFILE@@`, como lo deja el editor de Moodle.
+isterpry envía así las imágenes de los bancos importados desde XML de Moodle.
+Los archivos se borran con la pregunta en cada resincronización.
+
+## Banco de preguntas en JSON (1.2.7)
+
+`local_mod_sync_question_bank` acepta `preguntasjson`: la lista del banco en un
+solo parámetro JSON, validada con la misma estructura que `preguntas[]`. Así la
+petición no depende de `max_input_vars` de PHP, que truncaba los bancos grandes.
+
 ## Imágenes de secciones y recuperación de caché (1.2.6)
 
 Antes de operar, se convierten las imágenes PNG/JPEG/GIF/WebP base64 de los

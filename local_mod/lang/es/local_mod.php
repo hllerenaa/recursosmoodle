@@ -8,3 +8,4 @@ $string['bancoerrorqtype'] = 'Tipo de pregunta no soportado: {$a}';
 $string['bancoerrorslotfijo'] = 'No hay API para agregar el slot fijo en esta version de Moodle.';
 $string['bancoerrorslotaleatorio'] = 'No hay API para agregar preguntas aleatorias en esta version de Moodle.';
 $string['bancoerrorquizsettings'] = 'No se encontro la API de estructura del cuestionario en esta version de Moodle.';
+$string['bancoerrorimagen'] = 'No se encontro la respuesta {$a} para guardar su imagen.';

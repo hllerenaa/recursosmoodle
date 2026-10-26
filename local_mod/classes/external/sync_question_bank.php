@@ -11,6 +11,7 @@ use core_external\external_value;
 use core_external\external_single_structure;
 use core_external\external_multiple_structure;
 use context_module;
+use local_mod\local\imagenes_pregunta;
 
 /**
  * Sincronizacion masiva idempotente del banco de preguntas de un quiz.
@@ -30,36 +31,59 @@ class sync_question_bank extends external_api {
             'cantidadaleatorias' => new external_value(PARAM_INT,   'N preguntas a sortear (si aleatorio)', VALUE_DEFAULT, 0),
             'puntajealeatorio'   => new external_value(PARAM_FLOAT, 'maxmark por slot aleatorio', VALUE_DEFAULT, 1),
             'categoriaprefijo'   => new external_value(PARAM_ALPHANUMEXT, 'Prefijo del nombre de la categoria del banco ({prefijo}{cmid})', VALUE_DEFAULT, helper::CATEGORIA_PREFIJO),
-            'preguntas'          => new external_multiple_structure(
-                new external_single_structure([
-                    'indice'              => new external_value(PARAM_INT,  'Correlativo isterpry para mapear ids de vuelta'),
-                    'qtype'               => new external_value(PARAM_ALPHA, 'multichoice/truefalse/shortanswer/numerical/essay'),
-                    'nombre'              => new external_value(PARAM_TEXT, 'Nombre de la pregunta', VALUE_DEFAULT, ''),
-                    'enunciado'           => new external_value(PARAM_RAW,  'Enunciado (HTML)'),
-                    'retroalimentacion'   => new external_value(PARAM_RAW,  'Retroalimentacion general (HTML)', VALUE_DEFAULT, ''),
-                    'puntaje'             => new external_value(PARAM_FLOAT, 'Puntaje / maxmark del slot fijo'),
-                    'multiple'            => new external_value(PARAM_INT,  'multichoice: varias respuestas 0/1', VALUE_DEFAULT, 0),
-                    'vfcorrecta'          => new external_value(PARAM_INT,  'truefalse: 1=Verdadero correcto, 0=Falso correcto', VALUE_DEFAULT, 1),
-                    'usecase'             => new external_value(PARAM_INT,  'shortanswer: sensible a mayusculas 0/1', VALUE_DEFAULT, 0),
-                    'essaytextorequerido' => new external_value(PARAM_INT,  'essay: texto en linea requerido 0/1', VALUE_DEFAULT, 1),
-                    'essayadjuntos'       => new external_value(PARAM_INT,  'essay: numero de adjuntos permitidos', VALUE_DEFAULT, 0),
-                    'respuestas'          => new external_multiple_structure(
-                        new external_single_structure([
-                            'detalle'    => new external_value(PARAM_RAW,   'Texto de la respuesta'),
-                            'fraccion'   => new external_value(PARAM_FLOAT, 'Fraccion Moodle en % (-100..100), ya calculada por isterpry'),
-                            'tolerancia' => new external_value(PARAM_FLOAT, 'Tolerancia (numerical)', VALUE_DEFAULT, 0),
-                        ]),
-                        'Respuestas de la pregunta', VALUE_DEFAULT, []
-                    ),
-                ]),
-                'Lista completa del banco'
-            ),
+            'preguntas'          => self::estructura_preguntas(VALUE_DEFAULT),
+            'preguntasjson'      => new external_value(PARAM_RAW, 'Lista completa del banco como JSON; reemplaza a preguntas[] y evita el limite max_input_vars de PHP', VALUE_DEFAULT, ''),
         ]);
+    }
+
+    /**
+     * Estructura de la lista de preguntas, compartida por preguntas[] y preguntasjson.
+     */
+    private static function estructura_preguntas($requerido = VALUE_REQUIRED) {
+        return new external_multiple_structure(
+            new external_single_structure([
+                'indice'              => new external_value(PARAM_INT,  'Correlativo isterpry para mapear ids de vuelta'),
+                'qtype'               => new external_value(PARAM_ALPHA, 'multichoice/truefalse/shortanswer/numerical/essay'),
+                'nombre'              => new external_value(PARAM_TEXT, 'Nombre de la pregunta', VALUE_DEFAULT, ''),
+                'enunciado'           => new external_value(PARAM_RAW,  'Enunciado (HTML)'),
+                'retroalimentacion'   => new external_value(PARAM_RAW,  'Retroalimentacion general (HTML)', VALUE_DEFAULT, ''),
+                'puntaje'             => new external_value(PARAM_FLOAT, 'Puntaje / maxmark del slot fijo'),
+                'multiple'            => new external_value(PARAM_INT,  'multichoice: varias respuestas 0/1', VALUE_DEFAULT, 0),
+                'vfcorrecta'          => new external_value(PARAM_INT,  'truefalse: 1=Verdadero correcto, 0=Falso correcto', VALUE_DEFAULT, 1),
+                'usecase'             => new external_value(PARAM_INT,  'shortanswer: sensible a mayusculas 0/1', VALUE_DEFAULT, 0),
+                'essaytextorequerido' => new external_value(PARAM_INT,  'essay: texto en linea requerido 0/1', VALUE_DEFAULT, 1),
+                'essayadjuntos'       => new external_value(PARAM_INT,  'essay: numero de adjuntos permitidos', VALUE_DEFAULT, 0),
+                'respuestas'          => new external_multiple_structure(
+                    new external_single_structure([
+                        'detalle'    => new external_value(PARAM_RAW,   'Texto de la respuesta'),
+                        'fraccion'   => new external_value(PARAM_FLOAT, 'Fraccion Moodle en % (-100..100), ya calculada por isterpry'),
+                        'tolerancia' => new external_value(PARAM_FLOAT, 'Tolerancia (numerical)', VALUE_DEFAULT, 0),
+                    ]),
+                    'Respuestas de la pregunta', VALUE_DEFAULT, []
+                ),
+            ]),
+            'Lista completa del banco', $requerido, []
+        );
+    }
+
+    /**
+     * Decodifica y valida preguntasjson con la misma estructura que preguntas[].
+     */
+    private static function decodificar_preguntas_json($json) {
+        $preguntas = json_decode($json, true);
+        if (!is_array($preguntas)) {
+            throw new \invalid_parameter_exception('preguntasjson no es un JSON de lista valido: ' . json_last_error_msg());
+        }
+        $validado = self::validate_parameters(
+            new external_function_parameters(['preguntas' => self::estructura_preguntas()]),
+            ['preguntas' => $preguntas]
+        );
+        return $validado['preguntas'];
     }
 
     public static function execute($cmid, $aleatorio = 0, $cantidadaleatorias = 0,
                                    $puntajealeatorio = 1, $categoriaprefijo = helper::CATEGORIA_PREFIJO,
-                                   $preguntas = []) {
+                                   $preguntas = [], $preguntasjson = '') {
         global $CFG, $DB;
         require_once($CFG->dirroot . '/mod/quiz/lib.php');
         require_once($CFG->dirroot . '/mod/quiz/locallib.php');
@@ -73,7 +97,14 @@ class sync_question_bank extends external_api {
             'puntajealeatorio'   => $puntajealeatorio,
             'categoriaprefijo'   => $categoriaprefijo,
             'preguntas'          => $preguntas,
+            'preguntasjson'      => $preguntasjson,
         ]);
+        if ($params['preguntasjson'] !== '') {
+            $params['preguntas'] = self::decodificar_preguntas_json($params['preguntasjson']);
+        }
+        if (empty($params['preguntas'])) {
+            throw new \invalid_parameter_exception('Debe enviarse preguntas[] o preguntasjson con al menos una pregunta');
+        }
 
         $cm      = get_coursemodule_from_id('quiz', $params['cmid'], 0, false, MUST_EXIST);
         $quiz    = $DB->get_record('quiz', ['id' => $cm->instance], '*', MUST_EXIST);
@@ -156,6 +187,7 @@ class sync_question_bank extends external_api {
 
         $form = self::form_base($p, $categoria);
         self::form_por_tipo($form, $p);
+        $imagenes = self::extraer_imagenes($form);
 
         $question = new \stdClass();
         $question->id         = 0;
@@ -167,10 +199,39 @@ class sync_question_bank extends external_api {
 
         $nuevo = \question_bank::get_qtype($qtype)->save_question($question, $form);
 
+        $respuestaids = $qtype === 'multichoice'
+            ? array_keys($DB->get_records('question_answers', ['question' => $nuevo->id], 'id ASC', 'id'))
+            : [];
+        $imagenes->guardar((int) $categoria->contextid, (int) $nuevo->id, $respuestaids);
+
         $qbeid = $DB->get_field('question_versions', 'questionbankentryid',
             ['questionid' => $nuevo->id], MUST_EXIST);
 
         return [(int) $nuevo->id, (int) $qbeid];
+    }
+
+    /**
+     * Pasa las imagenes base64 de los textos del form a @@PLUGINFILE@@ y devuelve
+     * el extractor con los archivos pendientes de guardar tras save_question().
+     */
+    private static function extraer_imagenes(\stdClass $form) {
+        $imagenes = new imagenes_pregunta();
+        $form->questiontext['text']    = $imagenes->extraer($form->questiontext['text'], 'question', 'questiontext');
+        $form->generalfeedback['text'] = $imagenes->extraer($form->generalfeedback['text'], 'question', 'generalfeedback');
+        if ($form->qtype === 'multichoice') {
+            // save_question_options() omite las respuestas vacias: el item es la posicion entre las guardadas.
+            $posicion = 0;
+            foreach ($form->answer as $clave => $respuesta) {
+                if (trim($respuesta['text']) === '') {
+                    continue;
+                }
+                $form->answer[$clave]['text'] = $imagenes->extraer($respuesta['text'], 'question', 'answer', $posicion);
+                $posicion++;
+            }
+        } else if ($form->qtype === 'essay') {
+            $form->graderinfo['text'] = $imagenes->extraer($form->graderinfo['text'], 'qtype_essay', 'graderinfo');
+        }
+        return $imagenes;
     }
 
     /**

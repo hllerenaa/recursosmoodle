@@ -67,7 +67,7 @@ módulo.
 
 | Función WS | Uso | Parámetros clave | Capability |
 |---|---|---|---|
-| `local_mod_sync_question_bank` | Sincronizar (crear/reemplazar) | `cmid`, `preguntas[]`, `aleatorio?`, `cantidadaleatorias?`, `puntajealeatorio?`, `categoriaprefijo?` | `moodle/question:add` |
+| `local_mod_sync_question_bank` | Sincronizar (crear/reemplazar) | `cmid`, `preguntasjson` (o `preguntas[]`), `aleatorio?`, `cantidadaleatorias?`, `puntajealeatorio?`, `categoriaprefijo?` | `moodle/question:add` |
 | `local_mod_delete_question_bank` | Vaciar | `cmid`, `categoriaprefijo?` | `moodle/question:managecategory` + `moodle/question:editall` |
 
 `local_mod_sync_question_bank` es **idempotente**: en cada llamada primero
@@ -100,7 +100,14 @@ default del plugin.
 | `cantidadaleatorias` | `PARAM_INT` | `0` | N de preguntas a sortear por slot aleatorio (si `aleatorio=1`) |
 | `puntajealeatorio` | `PARAM_FLOAT` | `1` | `maxmark` de cada slot aleatorio |
 | `categoriaprefijo` | `PARAM_ALPHANUMEXT` | `banco_preguntas_` | Prefijo del nombre de categoría (`{prefijo}{cmid}`) |
-| `preguntas[]` | lista | — | Ver tabla siguiente |
+| `preguntas[]` | lista | `[]` | Ver tabla siguiente. Cada campo cuenta como una variable POST |
+| `preguntasjson` | `PARAM_RAW` | `''` | La misma lista serializada en JSON (desde 1.2.7). Si viene, reemplaza a `preguntas[]` |
+
+Se exige una de las dos con al menos una pregunta. Usar `preguntasjson`: con
+`preguntas[]` cada campo es una variable POST y PHP descarta en silencio las que
+pasan de `max_input_vars` (5000 en evapreg). Un test de 323 preguntas generaba
+7436 variables; se perdían `wstoken`, `wsfunction` y `moodlewsrestformat`, y
+Moodle respondía un XML que el cliente no podía leer.
 
 Cada elemento de `preguntas[]`:
 
